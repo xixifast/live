@@ -1,0 +1,33 @@
+{
+  "name": "city-builder-game",
+  "version": "1.0.0",
+  "description": "一个基于Phaser 3的城市建造游戏",
+  "main": "src/main.js",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "serve": "vite preview --port 3000"
+  },
+  "keywords": [
+    "phaser",
+    "game",
+    "city-builder",
+    "simulation"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "@reduxjs/toolkit": "^1.9.7",
+    "dexie": "^3.2.4",
+    "dotenv": "^16.5.0",
+    "openai": "^4.103.0",
+    "phaser": "^3.70.0",
+    "react-redux": "^8.1.3"
+  },
+  "devDependencies": {
+    "vite": "^4.5.0",
+    "vite-plugin-static-copy": "^0.17.0"
+  }
+}

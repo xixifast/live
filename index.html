@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>城市建造者</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background: #2c3e50;
+            font-family: 'Arial', sans-serif;
+            overflow: hidden;
+        }
+        
+        #game-container {
+            width: 100vw;
+            height: 100vh;
+            position: relative;
+        }
+        
+        #ui-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1000;
+        }
+        
+        .ui-panel {
+            pointer-events: auto;
+            background: rgba(52, 73, 94, 0.9);
+            border-radius: 8px;
+            padding: 10px;
+            color: white;
+        }
+        
+        #resource-panel {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            min-width: 200px;
+        }
+        
+        #build-panel {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            min-width: 150px;
+        }
+        
+        #ai-panel {
+            position: absolute;
+            bottom: 10px;
+            left: 10px;
+            min-width: 250px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        
+        .resource-item {
+            display: flex;
+            justify-content: space-between;
+            margin: 5px 0;
+        }
+        
+        .build-button {
+            display: block;
+            width: 100%;
+            margin: 5px 0;
+            padding: 8px;
+            background: #3498db;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        
+        .build-button:hover {
+            background: #2980b9;
+        }
+        
+        .build-button.active {
+            background: #e74c3c;
+        }
+        
+        .build-button.disabled {
+            background: #7f8c8d;
+            cursor: not-allowed;
+        }
+        
+        .ai-toggle {
+            width: 100%;
+            padding: 10px;
+            margin: 5px 0;
+            border: none;
+            border-radius: 4px;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .ai-toggle.enabled {
+            background: #27ae60;
+            color: white;
+        }
+        
+        .ai-toggle.disabled {
+            background: #e74c3c;
+            color: white;
+        }
+        
+        .ai-status {
+            font-size: 12px;
+            color: #bdc3c7;
+            margin: 5px 0;
+        }
+        
+        .ai-suggestion {
+            background: rgba(155, 89, 182, 0.3);
+            border-radius: 4px;
+            padding: 5px;
+            margin: 3px 0;
+            font-size: 12px;
+        }
+        
+        .ai-suggestion .building-type {
+            font-weight: bold;
+            color: #9b59b6;
+        }
+        
+        .ai-suggestion .reason {
+            color: #bdc3c7;
+        }
+        
+        .ai-controls {
+            margin: 10px 0;
+        }
+        
+        .ai-control-button {
+            padding: 5px 10px;
+            margin: 2px;
+            border: none;
+            border-radius: 3px;
+            background: #34495e;
+            color: white;
+            cursor: pointer;
+            font-size: 11px;
+        }
+        
+        .ai-control-button:hover {
+            background: #5d6d7e;
+        }
+        
+        #loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: white;
+            font-size: 24px;
+            z-index: 2000;
+        }
+    </style>
+</head>
+<body>
+    <div id="game-container">
+        <div id="loading">加载中...</div>
+        
+        <!-- UI 覆盖层 -->
+        <div id="ui-overlay">
+            <!-- 资源面板 -->
+            <div id="resource-panel" class="ui-panel">
+                <h3>资源</h3>
+                <div class="resource-item">
+                    <span>💰 资金:</span>
+                    <span id="money">10000</span>
+                </div>
+                <div class="resource-item">
+                    <span>👥 人口:</span>
+                    <span id="population">0</span>
+                </div>
+                <div class="resource-item">
+                    <span>😊 幸福度:</span>
+                    <span id="happiness">50</span>
+                </div>
+                <div class="resource-item">
+                    <span>⚡ 电力:</span>
+                    <span id="power">100/100</span>
+                </div>
+            </div>
+            
+            <!-- 建造面板 -->
+            <div id="build-panel" class="ui-panel">
+                <h3>建造</h3>
+                <button class="build-button" data-type="road">🛣️ 道路 ($10)</button>
+                <button class="build-button" data-type="residential">🏠 住宅 ($100)</button>
+                <button class="build-button" data-type="commercial">🏪 商业 ($150)</button>
+                <button class="build-button" data-type="industrial">🏭 工业 ($200)</button>
+                <button class="build-button" data-type="park">🌳 公园 ($50)</button>
+                <button class="build-button" data-type="power">⚡ 发电厂 ($500)</button>
+                <button class="build-button" data-type="school">🏫 学校 ($300)</button>
+                <button class="build-button" data-type="hospital">🏥 医院 ($400)</button>
+                <button class="build-button" data-type="police">👮 警察局 ($250)</button>
+            </div>
+            
+            <!-- AI控制面板 -->
+            <div id="ai-panel" class="ui-panel">
+                <h3>🤖 AI城市规划</h3>
+                
+                <!-- AI开关 -->
+                <button id="ai-toggle" class="ai-toggle disabled">启用AI规划</button>
+                
+                <!-- AI状态 -->
+                <div id="ai-status" class="ai-status">AI状态: 未启用</div>
+                
+                <!-- AI控制按钮 -->
+                <div class="ai-controls">
+                    <button id="ai-suggestions" class="ai-control-button">查看建议</button>
+                    <button id="ai-stats" class="ai-control-button">规划历史</button>
+                    <button id="ai-settings" class="ai-control-button">AI设置</button>
+                </div>
+                
+                <!-- AI建议列表 -->
+                <div id="ai-suggestions-list">
+                    <h4 style="margin: 10px 0 5px 0; font-size: 14px;">AI建议:</h4>
+                    <div id="suggestions-content">
+                        <div class="ai-status">等待分析...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script type="module" src="/src/main.js"></script>
+</body>
+</html> 
